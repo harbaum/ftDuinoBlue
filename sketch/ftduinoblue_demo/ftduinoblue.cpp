@@ -48,6 +48,7 @@ size_t FtduinoBlue::write(uint8_t b) {
   // println always sends \r\n. So we insert the checksum before the \r
   if(b == '\r') {
     this->mStream->write(':');
+    if(mOutSum < 16) this->mStream->write('0');
     this->mStream->print(mOutSum, HEX);
     mOutSum = 0;
   }

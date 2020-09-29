@@ -11,10 +11,14 @@
 #include <avr/pgmspace.h>
 #include "ftduinoblue.h"
 
+#if defined(__AVR_ATmega328P__)  // Arduino UNO, NANO
+// auto select UNO setup if the atmega328p is found
+#define USE_UNO_SU   // soft uart on arduino uno (HM10 on: RX D10, TX D09, GND D11, VCC D12)
+#else
 // This sketch supports different hardware setups. Choose you one below:
 #define USE_I2C_BT   // ftDuino with ftduino i2c bluetooth adapter 
 // #define USE_SERIAL1  // ftDuino as explained at https://harbaum.github.io/ftduino/www/manual/experimente.html#6.19.2
-// #define USE_UNO_SU   // soft uart on arduino uno (HM10 on: RX D10, TX D09, GND D11, VCC D12)
+#endif
 
 #ifdef USE_I2C_BT
 // use i2c bluetooth adapter
