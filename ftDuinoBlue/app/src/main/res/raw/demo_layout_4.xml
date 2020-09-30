@@ -1,0 +1,9 @@
+<layout orientation="portrait" name="Demo #4: Switches">
+    <label id="1" size="30" color="#E91E63" place="hcenter;top">Some Switches</label>
+    <switch id="2" size="20" width="parent" place="hcenter;below:1">First switch</switch>
+    <switch id="3" size="20" color="red" width="parent" place="hcenter;below:2">Second switch</switch>
+    <label id="4" size="30" color="#673AB7" place="hcenter;below:3">More Switches</label>
+    <switch id="5" size="20" width="parent" place="hcenter;below:4">Third switch</switch>
+    <switch id="6" size="20" width="parent" place="hcenter;below:5">Fourth switch</switch>
+    <switch id="7" size="20" bgcolor="#B7F7FF" width="parent" place="hcenter;below:6">Fifth switch</switch>
+</layout>

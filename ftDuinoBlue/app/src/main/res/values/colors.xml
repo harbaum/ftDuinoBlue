@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="colorPrimary">#004FEE</color>
+    <color name="colorPrimaryDark">#003AAE</color>
+    <color name="colorAccent">#2196F3</color>
+
+    <color name="xmlTag">#673AB7</color>
+    <color name="xmlAtn">#3F51B5</color>
+    <color name="xmlAtv">#E91E63</color>
+    <color name="xmlCom">#FF5722</color>
+    <color name="xmlPun">#4CAF50</color>
+    <color name="xmlPln">#00BCD4</color>
+</resources>

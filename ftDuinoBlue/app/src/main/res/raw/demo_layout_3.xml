@@ -1,0 +1,8 @@
+<layout orientation="portrait" name="Demo #3: Joysticks">
+    <joystick id="1" mode="drive" color="#FF9800" bgcolor="#03A9F4" place="hcenter;bottom"/>
+
+    <space id="2" width="100" place="hcenter;above:1"/>
+
+    <button id="3" size="60" color="#ffffff" bgcolor="#009688" place="above:1;left_of:2">A</button>
+    <button id="4" size="60" color="#ffffff" bgcolor="#F44336" place="above:1;right_of:2">B</button>
+</layout>

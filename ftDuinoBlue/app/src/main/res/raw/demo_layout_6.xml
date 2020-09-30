@@ -1,0 +1,7 @@
+<layout orientation="portrait" name="Demo #6: Slider">
+    <label id="1" size="20" place="top;hcenter">Some sliders</label>
+    <slider id="2" height="30" width="parent" color="#E91E63" place="left;below:1"/>
+    <slider id="3" height="30" width="parent" color="#03A9F4" enabled="false" place="left;below:2"/>
+    <slider id="4" height="30" width="parent" color="#4CAF50" place="left;below:3" max="10"/>
+    <slider id="5" height="parent" width="30" orientation="vertical" color="#FF9800" place="left;below:4" max="10"/>
+</layout>

@@ -1,0 +1,19 @@
+<resources>
+    <string name="app_name">ftDuinoBlue</string>
+    <string name="service_description">Service handling the ftDuinoBlue HM-10 bluetooth connection</string>
+    <string name="ble_not_supported">Bluetooth Low Energy is not supported on this device! But you can still run the demos.</string>
+    <string name="no_name">Unknown Device</string>
+    <string name="ok">OK</string>
+    <string name="title_activity_control">Control</string>
+    <string name="searching_info">Searching for <i>ftDuinoBlue</i> devices. Please make sure your target device is <b>powered on</b> and the LED on its HM-10 module <b>blinks slowly</b>.</string>
+    <string name="searching">Searching …</string>
+    <string name="button_demo">Run Demo</string>
+    <string name="con_lost">Connection lost!</string>
+    <string name="show_xml">Show XML</string>
+    <string name="ble_not_supported_title">BLE not supported</string>
+    <string name="xml_title">XML source</string>
+    <string name="about">About</string>
+    <string name="about_title">About</string>
+    <string name="project_description">%s V%s\nby Till Harbaum\n\nBuild custom remote user interfaces for ftDuino/Arduino.\n\nMore information:\nhttp://ftduino.de/blue/</string>
+    <string name="xml_info">The following is the XML code of this demo setup as it would be stored on the ftDuino/Arduino.</string>
+</resources>

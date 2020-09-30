@@ -1,0 +1,4 @@
+<layout orientation="landscape" name="Demo #5: Landscape">
+    <joystick id="2" color="#FF9800" bgcolor="#2196F3" place="left;bottom"/>
+    <joystick id="3" color="#FFEB3B" bgcolor="#009688" place="right;bottom"/>
+</layout>

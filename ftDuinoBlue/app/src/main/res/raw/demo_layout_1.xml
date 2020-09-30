@@ -1,0 +1,7 @@
+<layout orientation="portrait" name="Demo #1: About ftDuinoBlue">
+    <label id="1" size="20" place="left;top">ftDuinoBlue allows you to add a custom remote user interface to any Arduino and ftDuino project. All you need is a HM-10 bluetooth module connected to your Arduino, a few lines of extra code in your sketch, and this app.</label>
+    <label id="2" size="20" place="left;below:1">The entire user interface is stored as an XML description inside your Arduino sketch. There is no need to configure anything in this app.</label>
+    <label id="3" size="20" place="left;below:2">ftDuinoBlue supports various interface elements like e.g. buttons:</label>
+    <button id="4" size="30" color="white" bgcolor="#673AB7" place="hcenter;below:3">Button</button>
+    <label id="5" size="20" place="left;below:4">Use the controls in the demo to see what messages would be sent to the Arduino. Hit the button above for a test. Hit the info button in the menu to see the XML code.</label>
+</layout>
