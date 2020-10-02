@@ -1,7 +1,10 @@
 <layout orientation="portrait" name="Demo #6: Slider">
-    <label id="1" size="20" place="top;hcenter">Some sliders</label>
-    <slider id="2" height="30" width="parent" color="#E91E63" place="left;below:1"/>
-    <slider id="3" height="30" width="parent" color="#03A9F4" enabled="false" place="left;below:2"/>
-    <slider id="4" height="30" width="parent" color="#4CAF50" place="left;below:3" max="10"/>
-    <slider id="5" height="parent" width="30" orientation="vertical" color="#FF9800" place="left;below:4" max="10"/>
+    <label id="1" size="20" place="top;hcenter">Sliders can use physical sensors.</label>
+    <label id="2" size="20" place="left;below:1">Azimuth sensor:</label>
+    <slider id="3" sensor="azimuth" height="30" width="parent" color="#E91E63" place="left;below:2"/>
+    <label id="4" size="20" place="left;below:3">Roll sensor:</label>
+    <slider id="5" sensor="roll" height="30" width="parent" color="#03A9F4" enabled="false" place="left;below:4"/>
+    <slider id="6" height="30" width="parent" color="#4CAF50" place="left;below:5" max="10"/>
+    <label id="7" size="20" place="left;below:6">Pitch sensor:</label>
+    <slider id="8" sensor="pitch" height="parent" width="30" orientation="vertical" color="#FF9800" place="left;below:7" />
 </layout>

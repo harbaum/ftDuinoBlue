@@ -9,6 +9,10 @@ import android.content.IntentFilter;
 import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.PorterDuff;
+import android.hardware.Sensor;
+import android.hardware.SensorEvent;
+import android.hardware.SensorEventListener;
+import android.hardware.SensorManager;
 import android.os.Bundle;
 
 import androidx.annotation.NonNull;
@@ -17,6 +21,7 @@ import androidx.appcompat.app.AppCompatActivity;
 import androidx.appcompat.widget.SwitchCompat;
 import androidx.localbroadcastmanager.content.LocalBroadcastManager;
 
+import android.os.Handler;
 import android.text.Html;
 import android.text.method.ScrollingMovementMethod;
 import android.util.AttributeSet;
@@ -55,12 +60,20 @@ import static java.lang.Math.abs;
 
 public class ControlActivity extends AppCompatActivity {
     private final static String TAG = ControlActivity.class.getSimpleName();
+
     private RelativeLayout mRelativeLayout;
     private LayoutXmlParser.Layout mLayout = null;
     private String mXml = null;
     private boolean mInitiatedDisconnection = false;
     private List<View> mViews = new ArrayList<>();
     private boolean mIsDemo = false;
+
+    private SensorManager mSensorManager = null;
+    private float mSensorAccel[] = new float[3];
+    private float mSensorMag[] = new float[3];
+    private Handler mHandler = new Handler();
+    private Runnable mSensorLimiter = null;
+    private List<LayoutXmlParser.Item> mSensors = new ArrayList<>();
 
     void parseMessage(String cmd, String data) {
         // split data string into seperate parts
@@ -200,6 +213,9 @@ public class ControlActivity extends AppCompatActivity {
         Log.w(TAG, "destroy");
         super.onDestroy();
         LocalBroadcastManager.getInstance(this).unregisterReceiver(mHm10ServiceReceiver);
+
+        if(mSensorManager != null)
+            mSensorManager.unregisterListener(mEventListener);
     }
 
     View addSpace(final LayoutXmlParser.Space s) {
@@ -405,17 +421,16 @@ public class ControlActivity extends AppCompatActivity {
     }
 
     View addSlider(final LayoutXmlParser.Slider s) {
-//        SeekBar slider = new SeekBar(this);
         SeekBar slider = (!s.vertical())?new SeekBar(this):new VerticalSeekBar(this);
 
         slider.setId(s.id());
         slider.setEnabled(s.enabled());
         slider.setLayoutParams(s.layoutParams());
 
+        // add to list of sensor using elements if needed
+        if(s.sensor() != 0) mSensors.add(s);
+
         if(s.max() != null) slider.setMax(s.max());
-
-        // if(s.vertical()) slider.setRotation(270);
-
         if (s.color() != null) slider.getThumb().setTint(s.color());
         if (s.bgcolor() != null) slider.setBackgroundColor(s.bgcolor());
 
@@ -666,6 +681,99 @@ public class ControlActivity extends AppCompatActivity {
         return true;
     }
 
+    // map sensor values onto slider/joystick ranges
+    private int sensor_value(int type, Integer lmax, float vals[]) {
+        float angle = vals[0];  // sensor 1
+        if (type == 2) angle = vals[1];
+        if (type == 3) angle = vals[2];
+
+        // map angle to -180° ...180° range
+        if (angle < -180) angle += 360;
+        if (angle > 180) angle -= 360;
+
+        // get seekbar range 0..max
+        int max = 100;
+        if (lmax != null) max = lmax;
+
+        // scale angle to seekbar range
+        // limit pitch and roll to 0..90, azimuth to 0..360
+        if (type == 1) angle = max / 2 + (angle / 360 * max);
+        else angle = max / 2 + (angle / 90 * max);
+        if (angle < 0) angle = 0;
+        if (angle > max) angle = max;
+
+        return (int) angle;
+    }
+
+    final SensorEventListener mEventListener = new SensorEventListener() {
+        public void onAccuracyChanged(Sensor sensor, int accuracy) {
+        }
+
+        public void onSensorChanged(SensorEvent event) {
+            // Handle the events for which we registered
+            switch (event.sensor.getType()) {
+                case Sensor.TYPE_ACCELEROMETER:
+                    //Log.w(TAG, "Accel:" + event.values.length + ": " +
+                    //        event.values[0] + " " +event.values[1] + " " +event.values[2] );
+                    mSensorAccel = event.values.clone();
+                    break;
+
+                case Sensor.TYPE_MAGNETIC_FIELD:
+                    //Log.w(TAG, "Mag:" + event.values.length + ": " +
+                    //        event.values[0] + " " +event.values[1] + " " +event.values[2] );
+                    mSensorMag = event.values.clone();
+                    break;
+            }
+
+            if (mSensorMag != null && mSensorAccel != null) {
+                float[] gravity = new float[9];
+                float[] magnetic = new float[9];
+                SensorManager.getRotationMatrix(gravity, magnetic, mSensorAccel, mSensorMag);
+                float[] values = new float[3];
+                SensorManager.getOrientation(gravity, values);
+
+                // map values to degrees
+                for(int i=0;i<3;i++) values[i] = (float)(180.0 * values[i] / Math.PI);
+
+                // this is a pretty ugly way to limit the sensor rate to 10hz. We should
+                // come up with something nicer
+                if(mSensorLimiter == null) {
+                    // Log.d(TAG, "AZ: " + values[0] + " PITCH: " + values[1] + " ROLL: " + values[2]);
+
+                    // go over all elements
+                    for(LayoutXmlParser.Item item: mSensors) {
+                        // walk over all views
+                        for(View view: mViews) {
+                            if(view.getId() == item.id()) {
+                                if(view instanceof SeekBar && item instanceof LayoutXmlParser.Slider) {
+                                    LayoutXmlParser.Slider slider = (LayoutXmlParser.Slider)item;
+
+                                    if(slider.sensor() != 0) {
+                                        int angle = sensor_value(slider.sensor(), slider.max(), values);
+
+                                        // set value on user element
+                                        ((SeekBar) view).setProgress(angle);
+
+                                        // send the value
+                                        sendMessage("SLIDER " + slider.id() + " " + angle);
+                                    }
+                                }
+                            }
+                        }
+                   }
+
+                    // send updated values to all connected elements. But limit the rate to 10 hz
+                    mHandler.postDelayed(mSensorLimiter = new Runnable() {
+                        @Override public void run() { mSensorLimiter = null; }
+                    }, 100);
+                }
+
+                mSensorMag = null;
+                mSensorAccel = null;
+            }
+        };
+    };
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -687,5 +795,15 @@ public class ControlActivity extends AppCompatActivity {
             // finally request state
             sendMessage("STATE");
         }
+
+        // check if sensores are used in this layout
+        if(mSensors.size() > 0) {
+            mSensorManager = (SensorManager) this.getSystemService(SENSOR_SERVICE);
+            mSensorManager.registerListener(mEventListener, mSensorManager.getDefaultSensor(Sensor.TYPE_ACCELEROMETER),
+                    SensorManager.SENSOR_DELAY_NORMAL);
+            mSensorManager.registerListener(mEventListener, mSensorManager.getDefaultSensor(Sensor.TYPE_MAGNETIC_FIELD),
+                    SensorManager.SENSOR_DELAY_NORMAL);
+        } else
+            Log.d(TAG, "No sensors in this layout");
     }
 }

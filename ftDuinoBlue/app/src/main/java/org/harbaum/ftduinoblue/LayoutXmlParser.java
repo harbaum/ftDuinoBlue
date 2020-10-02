@@ -284,6 +284,7 @@ public class LayoutXmlParser {
 
     public static class Joystick extends Item {
         int mMode = 0;    // 0 = x/y, 1 = angle, 2=drive
+        private int mSensor[] = { 0, 0 };   // x/y 0=none,1=azimuth,2=pitch,3=roll
 
         private Joystick(int id) {
             super(id);
@@ -299,13 +300,26 @@ public class LayoutXmlParser {
                 if (mode.equalsIgnoreCase("angle")) mMode = 1;
                 if (mode.equalsIgnoreCase("drive")) mMode = 2;
             }
+            String sensor = parser.getAttributeValue(null, "sensor");
+            if (sensor != null && sensor.split(";").length == 2) {
+                // expect two semicolon sperated parts
+                int idx = 0;
+                for(String s: sensor.split(";")) {
+                    if (s.trim().equalsIgnoreCase("azimuth")) mSensor[idx] = 1;
+                    if (s.trim().equalsIgnoreCase("pitch"))   mSensor[idx] = 2;
+                    if (s.trim().equalsIgnoreCase("roll"))    mSensor[idx] = 3;
+                    idx++;
+                }
+            }
         }
         public Integer mode() { return mMode; }
+        public int sensor(int s) { return mSensor[s]; }
     }
 
     public static class Slider extends Item {
         private Integer mMax = null;
         private Boolean mVertical = false;
+        private int mSensor = 0;   // 0=none,1=azimuth,2=pitch,3=roll
 
         private Slider(int id) {
             super(id);
@@ -319,10 +333,17 @@ public class LayoutXmlParser {
             if (max != null) mMax = Integer.parseInt(max);
             String vert = parser.getAttributeValue(null, "orientation");
             if (vert != null) mVertical = vert.trim().equalsIgnoreCase("vertical");
+            String sensor = parser.getAttributeValue(null, "sensor");
+            if (sensor != null) {
+                if(sensor.trim().equalsIgnoreCase("azimuth")) mSensor = 1;
+                if(sensor.trim().equalsIgnoreCase("pitch"))   mSensor = 2;
+                if(sensor.trim().equalsIgnoreCase("roll"))    mSensor = 3;
+            }
         }
 
         public Integer max() { return mMax; }
         public Boolean vertical() { return mVertical; }
+        public int sensor() { return mSensor; }
     }
 
     private Item readItem(XmlPullParser parser, String element) throws XmlPullParserException, IOException {

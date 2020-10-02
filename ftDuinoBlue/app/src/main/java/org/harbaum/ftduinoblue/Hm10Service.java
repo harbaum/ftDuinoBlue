@@ -727,7 +727,7 @@ public class Hm10Service extends Service {
             return -1;
         }
 
-        // join to byte arrays
+        // join two byte arrays
         private
         byte[] join(byte[] a, byte[] b) {
             byte[] combined = new byte[a.length + b.length];

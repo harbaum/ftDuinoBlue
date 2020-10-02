@@ -14,6 +14,6 @@
     <string name="xml_title">XML source</string>
     <string name="about">About</string>
     <string name="about_title">About</string>
-    <string name="project_description">%s V%s\nby Till Harbaum\n\nBuild custom remote user interfaces for ftDuino/Arduino.\n\nMore information:\nhttp://ftduino.de/blue/</string>
+    <string name="project_description">%s V%s\nby Till Harbaum\n\nBuild custom remote user interfaces for ftDuino/Arduino.\n\nMore information:\nhttp://ftduino.de/blue/\nSource code:\nhttps://github.com/harbaum/ftDuinoBlue</string>
     <string name="xml_info">The following is the XML code of this demo setup as it would be stored on the ftDuino/Arduino.</string>
 </resources>
