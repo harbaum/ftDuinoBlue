@@ -16,7 +16,6 @@ public:
   int peek();
   void flush();
   size_t write(uint8_t byte);
-//  using Print::write;
 
 private:
   uint8_t registerRead(char r);

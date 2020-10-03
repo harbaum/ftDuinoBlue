@@ -6,31 +6,11 @@ FtduinoBlue::FtduinoBlue(Stream &s, const char *l) {
   this->layout = l;
   this->mOutSum = 0;
   this->buffer_fill = 0;
-  this->m_state_cb = NULL;
-  this->m_button_cb = NULL;
-  this->m_switch_cb = NULL;
-  this->m_slider_cb = NULL;
-  this->m_joystick_cb = NULL;
+  this->m_callback = NULL;
 }
 
-void FtduinoBlue::setStateCb(void (*cb)()) {
-  this->m_state_cb = cb;
-}
-
-void FtduinoBlue::setButtonCb(void (*cb)(char, bool)) {
-  this->m_button_cb = cb;
-}
-
-void FtduinoBlue::setSwitchCb(void (*cb)(char, bool)) {
-  this->m_switch_cb = cb;
-}
-
-void FtduinoBlue::setSliderCb(void (*cb)(char, int)) {
-  this->m_slider_cb = cb;
-}
-
-void FtduinoBlue::setJoystickCb(void (*cb)(char, char, char)) {
-  this->m_joystick_cb = cb;
+void FtduinoBlue::setCallback(void (*cb)(struct reply *)) {
+  this->m_callback = cb;
 }
 
 int FtduinoBlue::available() {
@@ -125,31 +105,35 @@ void FtduinoBlue::parseCommand(char *buffer) {
 
     // received the STATE command from the android app. Reply
     // with the current value for sliders and switches
-    if(m_state_cb) m_state_cb();
-    
+    mReply.type = STATE;
+    if(m_callback) m_callback(&mReply);
   } else if(strncmp(buffer, "BUTTON ", 7) == 0) {
     char *idx = buffer;
-    char id = parseParameter(&idx);
+    mReply.type = BUTTON;
+    mReply.id = parseParameter(&idx);
     parseParameter(&idx);
-    char down = (strncmp(idx, "DOWN", 4) == 0);
-    if(m_button_cb) m_button_cb(id, down);    
+    mReply.state = (strncmp(idx, "DOWN", 4) == 0);
+    if(m_callback) m_callback(&mReply);
   } else if(strncmp(buffer, "SLIDER ", 7) == 0) {
     char *idx = buffer;
-    char id = parseParameter(&idx);
-    int value = parseParameter(&idx);
-    if(m_slider_cb) m_slider_cb(id, value);    
+    mReply.type = SLIDER;
+    mReply.id = parseParameter(&idx);
+    mReply.slider = parseParameter(&idx);
+    if(m_callback) m_callback(&mReply);
   } else if(strncmp(buffer, "JOYSTICK ", 9) == 0) {
     char *idx = buffer;
-    char id = parseParameter(&idx);
-    int value1 = parseParameter(&idx);
-    int value2 = parseParameter(&idx);
-    if(m_joystick_cb) m_joystick_cb(id, value1, value2);    
+    mReply.type = JOYSTICK;
+    mReply.id = parseParameter(&idx);
+    mReply.joystick.x  = parseParameter(&idx);
+    mReply.joystick.y  = parseParameter(&idx);
+    if(m_callback) m_callback(&mReply);
   } else if(strncmp(buffer, "SWITCH ", 7) == 0) {
     char *idx = buffer;
-    char id = parseParameter(&idx);
+    mReply.type = SWITCH;
+    mReply.id = parseParameter(&idx);
     parseParameter(&idx);   // return value is ignored as we parse the string outselves
-    char on = (strncmp(idx, "ON", 2) == 0);
-    if(m_switch_cb) m_switch_cb(id, on);    
+    mReply.state = (strncmp(idx, "ON", 2) == 0);
+    if(m_callback) m_callback(&mReply);
   } else {
     Serial.print("unknown cmd ");
     Serial.println(buffer);

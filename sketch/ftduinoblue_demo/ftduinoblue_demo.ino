@@ -60,13 +60,9 @@ void setup() {
   pinMode(12, OUTPUT);  digitalWrite(12, HIGH);
 #endif
 
-  // register callbacks for ftduinoblue
-  ftdblue.setStateCb(ftduinoblue_state_callback);
-  ftdblue.setButtonCb(ftduinoblue_button_callback);
-  ftdblue.setSwitchCb(ftduinoblue_switch_callback);
-  ftdblue.setSliderCb(ftduinoblue_slider_callback);
-  ftdblue.setJoystickCb(ftduinoblue_joystick_callback);
-
+  // register callback for ftduinoblue
+  ftdblue.setCallback(ftduinoblue_callback);
+  
   btSerial.begin(9600);
   
 // optionally set the bluetooth name.
@@ -105,54 +101,69 @@ void adapter_led() {
 #endif
 }
 
-// callback invoked by ftduinoblue whenever the app requests the current state
-void ftduinoblue_state_callback() {    
-  ftdblue.print("SWITCH 1 ");
-  ftdblue.println(ledState?"ON":"OFF");
-  ftdblue.print("SLIDER 3 ");
-  ftdblue.println(ledBrightness);
-  ftdblue.print("SLIDER 5 ");
-  ftdblue.println(ledBlinkSpeed);
-}
+void ftduinoblue_callback(struct FtduinoBlue::reply *r) {    
+  switch(r->type) {
+    case FtduinoBlue::STATE:
+      Serial.println("STATE");
+      
+      ftdblue.print("SWITCH 1 ");
+      ftdblue.println(ledState?"ON":"OFF");
+      ftdblue.print("SLIDER 3 ");
+      ftdblue.println(ledBrightness);
+      ftdblue.print("SLIDER 5 ");
+      ftdblue.println(ledBlinkSpeed);    
+      break;
 
-void ftduinoblue_button_callback(char id, bool state) {
-  Serial.print("BUTTON ");
-  Serial.print(id, DEC);
-  Serial.print(" ");
-  Serial.println(state?"DOWN":"UP");
-}
+    case FtduinoBlue::BUTTON:
+      Serial.print("BUTTON ");
+      Serial.print(r->id, DEC);
+      Serial.print(" ");
+      Serial.println(r->state?"DOWN":"UP");
+      break;
 
-void ftduinoblue_switch_callback(char id, bool state) {
-  Serial.print("SWITCH ");
-  Serial.print(id, DEC);
-  Serial.print(" ");
-  Serial.println(state?"ON":"OFF");
+    case FtduinoBlue::SWITCH:
+      Serial.print("SWITCH ");
+      Serial.print(r->id, DEC);
+      Serial.print(" ");
+      Serial.println(r->state?"ON":"OFF");
 
-  // make sure the led reacts on switch 1
-  if(id == 1) {
-    ledChanged = true;
-    ledState = state;       
+      // make sure the led reacts on switch 1
+      if(r->id == 1) {
+        ledChanged = true;
+        ledState = r->state;       
+      }
+      break;
+
+    case FtduinoBlue::SLIDER:
+      Serial.print("SLIDER ");
+      Serial.print(r->id, DEC);
+      Serial.print(" ");
+      Serial.println(r->slider, DEC);
+      
+      if(r->id == 3) {
+        ledBrightness = r->slider;
+        ledChanged = true;   // user has changed something -> led needs to be updated
+      }
+      if(r->id == 5) {
+        ledBlinkSpeed = r->slider;
+        ledChanged = true;   // user has changed something -> led needs to be updated
+      }
+      break;
+      
+    case FtduinoBlue::JOYSTICK:
+      Serial.print("JOYSTICK ");
+      Serial.print(r->id, DEC);
+      Serial.print(" ");
+      Serial.print(r->joystick.x, DEC);
+      Serial.print(" ");
+      Serial.println(r->joystick.y, DEC);
+      break;
+
+    default:
+      Serial.print("UNKNOWN ");
+      Serial.println(r->type, DEC);
+      break;
   }
-}
-
-void ftduinoblue_slider_callback(char id, int value) {
-  Serial.print("SLIDER ");
-  Serial.print(id, DEC);
-  Serial.print(" ");
-  Serial.println(value, DEC);
-
-  if(id == 3) ledBrightness = value;
-  if(id == 5) ledBlinkSpeed = value;
-  ledChanged = true;   // user has changed something -> led needs to be updated
-}
-
-void ftduinoblue_joystick_callback(char id, char value_x, char value_y) {
-  Serial.print("JOYSTICK ");
-  Serial.print(id, DEC);
-  Serial.print(" ");
-  Serial.print(value_x, DEC);
-  Serial.print(" ");
-  Serial.println(value_y, DEC);
 }
 
 void loop() {
