@@ -105,31 +105,31 @@ void FtduinoBlue::parseCommand(char *buffer) {
 
     // received the STATE command from the android app. Reply
     // with the current value for sliders and switches
-    mReply.type = STATE;
+    mReply.type = FTDB_STATE;
     if(m_callback) m_callback(&mReply);
   } else if(strncmp(buffer, "BUTTON ", 7) == 0) {
     char *idx = buffer;
-    mReply.type = BUTTON;
+    mReply.type = FTDB_BUTTON;
     mReply.id = parseParameter(&idx);
     parseParameter(&idx);
     mReply.state = (strncmp(idx, "DOWN", 4) == 0);
     if(m_callback) m_callback(&mReply);
   } else if(strncmp(buffer, "SLIDER ", 7) == 0) {
     char *idx = buffer;
-    mReply.type = SLIDER;
+    mReply.type = FTDB_SLIDER;
     mReply.id = parseParameter(&idx);
     mReply.slider = parseParameter(&idx);
     if(m_callback) m_callback(&mReply);
   } else if(strncmp(buffer, "JOYSTICK ", 9) == 0) {
     char *idx = buffer;
-    mReply.type = JOYSTICK;
+    mReply.type = FTDB_JOYSTICK;
     mReply.id = parseParameter(&idx);
     mReply.joystick.x  = parseParameter(&idx);
     mReply.joystick.y  = parseParameter(&idx);
     if(m_callback) m_callback(&mReply);
   } else if(strncmp(buffer, "SWITCH ", 7) == 0) {
     char *idx = buffer;
-    mReply.type = SWITCH;
+    mReply.type = FTDB_SWITCH;
     mReply.id = parseParameter(&idx);
     parseParameter(&idx);   // return value is ignored as we parse the string outselves
     mReply.state = (strncmp(idx, "ON", 2) == 0);

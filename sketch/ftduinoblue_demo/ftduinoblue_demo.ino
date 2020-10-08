@@ -24,6 +24,8 @@
 // use i2c bluetooth adapter
 #include "I2cSerialBt.h"
 I2cSerialBt btSerial;
+#include <Ftduino.h>
+#define FTDUINO
 #else 
 #ifdef USE_UNO_SU
 #include <SoftwareSerial.h>
@@ -58,6 +60,10 @@ void setup() {
   // power up bt module on uno
   pinMode(11, OUTPUT);  digitalWrite(11, LOW);
   pinMode(12, OUTPUT);  digitalWrite(12, HIGH);
+#endif
+
+#ifdef FTDUINO
+  ftduino.init();
 #endif
 
   // register callback for ftduinoblue
@@ -103,7 +109,7 @@ void adapter_led() {
 
 void ftduinoblue_callback(struct FtduinoBlue::reply *r) {    
   switch(r->type) {
-    case FtduinoBlue::STATE:
+    case FtduinoBlue::FTDB_STATE:
       Serial.println("STATE");
       
       ftdblue.print("SWITCH 1 ");
@@ -114,14 +120,14 @@ void ftduinoblue_callback(struct FtduinoBlue::reply *r) {
       ftdblue.println(ledBlinkSpeed);    
       break;
 
-    case FtduinoBlue::BUTTON:
+    case FtduinoBlue::FTDB_BUTTON:
       Serial.print("BUTTON ");
       Serial.print(r->id, DEC);
       Serial.print(" ");
       Serial.println(r->state?"DOWN":"UP");
       break;
 
-    case FtduinoBlue::SWITCH:
+    case FtduinoBlue::FTDB_SWITCH:
       Serial.print("SWITCH ");
       Serial.print(r->id, DEC);
       Serial.print(" ");
@@ -134,7 +140,7 @@ void ftduinoblue_callback(struct FtduinoBlue::reply *r) {
       }
       break;
 
-    case FtduinoBlue::SLIDER:
+    case FtduinoBlue::FTDB_SLIDER:
       Serial.print("SLIDER ");
       Serial.print(r->id, DEC);
       Serial.print(" ");
@@ -150,7 +156,7 @@ void ftduinoblue_callback(struct FtduinoBlue::reply *r) {
       }
       break;
       
-    case FtduinoBlue::JOYSTICK:
+    case FtduinoBlue::FTDB_JOYSTICK:
       Serial.print("JOYSTICK ");
       Serial.print(r->id, DEC);
       Serial.print(" ");
@@ -188,6 +194,10 @@ void loop() {
     // of the blinking. Switch it off otherwise
     if(led_state && ledState) analogWrite(LED_BUILTIN, ledBrightness);
     else                      digitalWrite(LED_BUILTIN, LOW);      
+#ifdef FTDUINO
+    if(led_state && ledState) ftduino.output_set(Ftduino::O1, Ftduino::HI, ledBrightness/4);
+    else                      ftduino.output_set(Ftduino::O1, Ftduino::OFF, 0);
+#endif
   }
 
   ftdblue.handle();

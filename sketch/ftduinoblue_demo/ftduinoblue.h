@@ -5,12 +5,12 @@
 // every message sent.
 class FtduinoBlue: public Stream {
 public:
-  static const uint8_t STATE    = 0;
-  static const uint8_t LABEL    = 1;
-  static const uint8_t BUTTON   = 2;
-  static const uint8_t SWITCH   = 3;
-  static const uint8_t JOYSTICK = 4;
-  static const uint8_t SLIDER   = 5;
+  static const uint8_t FTDB_STATE    = 0;
+  static const uint8_t FTDB_LABEL    = 1;
+  static const uint8_t FTDB_BUTTON   = 2;
+  static const uint8_t FTDB_SWITCH   = 3;
+  static const uint8_t FTDB_JOYSTICK = 4;
+  static const uint8_t FTDB_SLIDER   = 5;
 
   struct reply {
     uint8_t type, id;
