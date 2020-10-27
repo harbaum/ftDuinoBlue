@@ -42,12 +42,11 @@ public class ScanActivity extends AppCompatActivity implements DeviceViewAdapter
     private static final int ENABLE_BLUETOOTH = 2;
 
     private static DeviceViewAdapter adapter;
-    private Hm10Service hm10Service = null;
 
     private final BroadcastReceiver mHm10ServiceReceiver = new BroadcastReceiver() {
         @Override
         public void onReceive(Context context, Intent intent) {
-            Log.w(TAG, "Received intent: "+intent);
+            Log.d(TAG, "Received intent: "+intent);
 
             switch(Objects.requireNonNull(intent.getAction())) {
                 case Hm10Service.ACTION_NOTIFY_NO_BLE:
@@ -86,6 +85,8 @@ public class ScanActivity extends AppCompatActivity implements DeviceViewAdapter
                     break;
 
                 case Hm10Service.ACTION_DISCONNECTED:
+                    // usually this needs not special action. But this may happen
+                    // while connecting. In that case we need to re-enabled scanning
                     adapter.setBusy(-1);
                     findViewById(R.id.scanningBar).setVisibility(View.VISIBLE);
                     sendRequest(Hm10Service.ACTION_START_SCAN);
@@ -95,23 +96,24 @@ public class ScanActivity extends AppCompatActivity implements DeviceViewAdapter
                     Log.d(TAG,"hm10 service is gone");
                     // the hm10 service has sent a notification that it has been
                     // destroyed. Assume any connection to be gone.
+                    findViewById(R.id.scanningBar).setVisibility(View.GONE);
                     adapter.setBusy(-1);
                     adapter.clearList();  // forget everything about devices already detected
+
+                    // show demo dialog again
+                    findViewById(R.id.initLayout).setVisibility(View.VISIBLE);
                     break;
 
                 case Hm10Service.ACTION_NOTIFY_INITIALIZED:
-                    // only start scanner if it's not already in progress
-                    if(findViewById(R.id.scanningBar).getVisibility() != View.VISIBLE) {
-                        findViewById(R.id.scanningBar).setVisibility(View.VISIBLE);
-                        sendRequest(Hm10Service.ACTION_START_SCAN);
-                    }
+                    Log.d(TAG, "service initialized, start scan");
+                    findViewById(R.id.scanningBar).setVisibility(View.VISIBLE);
+                    sendRequest(Hm10Service.ACTION_START_SCAN);
                     break;
 
                 case Hm10Service.ACTION_NOTIFY_INFORMATION:
                     String title = intent.getStringExtra("title");
                     String message = intent.getStringExtra("message");
 
-                    // TODO: clear current list of known devices? xyz
                     AlertDialog alertFailDialog = new AlertDialog.Builder(ScanActivity.this).create();
                     alertFailDialog.setTitle(title);
                     if(message != null) alertFailDialog.setMessage(message);
@@ -134,11 +136,29 @@ public class ScanActivity extends AppCompatActivity implements DeviceViewAdapter
                     break;
 
                 default:
-                    Log.w(TAG, "Unexpected intent: " + intent);
+                    Log.w(TAG, "Unexpected inteent: " + intent);
                     break;
             }
         }
     };
+
+    @Override
+    protected void onResume() {
+        super.onResume();
+        Log.d(TAG, "onResume(): starting service");
+        Intent intent = new Intent(this, Hm10Service.class);
+        try {
+            startService(intent);
+        } catch (IllegalStateException e) {
+            Log.d(TAG, "Failed to start service, will retry later");
+        }
+    }
+
+    @Override
+    protected void onPause() {
+        super.onPause();
+        Log.d(TAG, "onPause()");
+    }
 
     @Override
     public boolean onOptionsItemSelected(@NonNull MenuItem item) {
@@ -216,10 +236,6 @@ public class ScanActivity extends AppCompatActivity implements DeviceViewAdapter
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
         super.onActivityResult(requestCode, resultCode, data);
 
-        if (requestCode == 4711) {
-            Log.w(TAG, "Result for Control Activity: " + resultCode);
-        }
-
         if (requestCode == ENABLE_BLUETOOTH)
             if(resultCode == Activity.RESULT_OK) {
                 sendRequest(Hm10Service.ACTION_BLUETOOTH_ENABLED);
@@ -243,7 +259,7 @@ public class ScanActivity extends AppCompatActivity implements DeviceViewAdapter
     }
 
     void getLocationAccess() {
-        Log.w(TAG, "request location access");
+        Log.d(TAG, "request location access");
 
         if (android.os.Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
             if (ScanActivity.this.checkSelfPermission(Manifest.permission.ACCESS_FINE_LOCATION)
@@ -296,13 +312,6 @@ public class ScanActivity extends AppCompatActivity implements DeviceViewAdapter
     protected void onStart() {
         super.onStart();
         Log.d(TAG, "onStart()");
-
-        if(hm10Service == null) {
-            Log.d(TAG, "Starting service");
-            Intent intent = new Intent(this, Hm10Service.class);
-            startService(intent);
-        } else
-            Log.d(TAG, "Service already running");
     }
 
     @Override
@@ -326,6 +335,7 @@ public class ScanActivity extends AppCompatActivity implements DeviceViewAdapter
         ArrayList<DeviceViewAdapter.DeviceEntry> savedDevices = null;
         if(savedInstanceState != null) {
             savedDevices = savedInstanceState.getParcelableArrayList("foundDevices");
+            // Log.i(TAG, "found saved devices: " + savedDevices.size());
             if(savedDevices != null && savedDevices.size() > 0)
                 findViewById(R.id.initLayout).setVisibility(View.GONE);
         }

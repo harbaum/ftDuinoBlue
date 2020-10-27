@@ -8,7 +8,6 @@ import android.content.Intent;
 import android.content.IntentFilter;
 import android.graphics.Canvas;
 import android.graphics.Color;
-import android.graphics.PorterDuff;
 import android.hardware.Sensor;
 import android.hardware.SensorEvent;
 import android.hardware.SensorEventListener;
@@ -41,8 +40,6 @@ import android.widget.Switch;
 import android.widget.TextView;
 import android.widget.Toast;
 
-import com.google.android.material.slider.Slider;
-
 import org.xmlpull.v1.XmlPullParserException;
 
 import java.io.ByteArrayInputStream;
@@ -56,8 +53,6 @@ import prettify.PrettifyParser;
 import syntaxhighlight.ParseResult;
 import syntaxhighlight.Parser;
 
-import static java.lang.Math.abs;
-
 public class ControlActivity extends AppCompatActivity {
     private final static String TAG = ControlActivity.class.getSimpleName();
 
@@ -69,8 +64,8 @@ public class ControlActivity extends AppCompatActivity {
     private boolean mIsDemo = false;
 
     private SensorManager mSensorManager = null;
-    private float mSensorAccel[] = new float[3];
-    private float mSensorMag[] = new float[3];
+    private float[] mSensorAccel = new float[3];
+    private float[] mSensorMag = new float[3];
     private Handler mHandler = new Handler();
     private Runnable mSensorLimiter = null;
     private List<LayoutXmlParser.Item> mSensors = new ArrayList<>();
@@ -88,6 +83,16 @@ public class ControlActivity extends AppCompatActivity {
                     if (view.getId() == id) {
                         // use this to update views
                         switch (cmd.trim().toLowerCase()) {
+                            case "enable":
+                                Log.d(TAG, "Enable " + view.getId());
+                                view.setEnabled(true);
+                                break;
+
+                            case "disable":
+                                Log.d(TAG, "Disable " + view.getId());
+                                view.setEnabled(false);
+                                break;
+
                             case "text":
                                 // this needs another parameter
                                 if(dataParts.length == 2) {
@@ -147,10 +152,21 @@ public class ControlActivity extends AppCompatActivity {
                                     } catch(IllegalArgumentException e) { /*ignore */ }
 
                                     if(c != null) {
-                                        if (view instanceof TextView) ((TextView) view).setBackgroundColor(c);
-                                        if (view instanceof Switch)   ((Switch) view).setBackgroundColor(c);
-                                        if (view instanceof Button)   ((Button) view).setBackgroundColor(c);
-                                        if (view instanceof SeekBar)  ((SeekBar) view).setBackgroundColor(c);
+                                        if (view instanceof TextView)
+                                            ((TextView) view).setBackgroundColor(c);
+                                        if (view instanceof Switch) {
+                                            // this doesn't restore the correct color
+//                                            ((Switch) view).getBackground().clearColorFilter();
+//                                            ((Switch) view).getBackground().setColorFilter(c, PorterDuff.Mode.MULTIPLY);
+                                            ((Switch) view).setBackgroundColor(c);
+                                        }
+                                        if (view instanceof Button) {
+//                                            ((Button) view).getBackground().clearColorFilter();
+//                                            ((Button) view).getBackground().setColorFilter(c, PorterDuff.Mode.MULTIPLY);
+                                            ((Button) view).setBackgroundColor(c);
+                                        }
+                                        if (view instanceof SeekBar)
+                                            ((SeekBar) view).setBackgroundColor(c);
                                     }
                                 }
                                 break;
@@ -187,6 +203,12 @@ public class ControlActivity extends AppCompatActivity {
                     String data = intent.getStringExtra("data");
                     if (cmd != null && data != null)
                         parseMessage(cmd, data);
+                    break;
+
+                // Hm10 service reports that it's about to be gone ...
+                case Hm10Service.ACTION_NOTIFY_DESTROYED:
+                    Log.w(TAG, "Hm10 service will be gone");
+                    finish();
                     break;
             }
         }
@@ -236,8 +258,8 @@ public class ControlActivity extends AppCompatActivity {
         button.setLayoutParams(b.layoutParams());
 
         if (b.color() != null) button.setTextColor(b.color());
-        if (b.bgcolor() != null)
-            button.getBackground().setColorFilter(b.bgcolor(), PorterDuff.Mode.MULTIPLY);
+        if (b.bgcolor() != null) button.setBackgroundColor(b.bgcolor());
+//          button.getBackground().setColorFilter(b.bgcolor(), PorterDuff.Mode.MULTIPLY);
 
         button.setOnTouchListener(new View.OnTouchListener() {
             @Override
@@ -268,8 +290,7 @@ public class ControlActivity extends AppCompatActivity {
         sw.setLayoutParams(s.layoutParams());
 
         if (s.color() != null) sw.setTextColor(s.color());
-        if (s.bgcolor() != null)
-            sw.getBackground().setColorFilter(s.bgcolor(), PorterDuff.Mode.MULTIPLY);
+        if (s.bgcolor() != null) sw.setBackgroundColor(s.bgcolor());
 
         // send any switch changes as a message to be send via Hm10
         sw.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
@@ -362,7 +383,7 @@ public class ControlActivity extends AppCompatActivity {
         return joystick;
     }
 
-    public class VerticalSeekBar extends SeekBar {
+    public class VerticalSeekBar extends androidx.appcompat.widget.AppCompatSeekBar {
         public VerticalSeekBar(Context context) {
             super(context);
         }
@@ -526,13 +547,29 @@ public class ControlActivity extends AppCompatActivity {
 
             // get matching color
             int colorIdx = -1;
-            if(type.equals("tag")) colorIdx = R.color.xmlTag;       // tag
-            else if(type.equals("atn")) colorIdx = R.color.xmlAtn;  // attribute name
-            else if(type.equals("atv")) colorIdx = R.color.xmlAtv;  // attribute value
-            else if(type.equals("com")) colorIdx = R.color.xmlCom;  // comment
-            else if(type.equals("pln")) colorIdx = R.color.xmlPln;  // plain text
-            else if(type.equals("pun")) colorIdx = R.color.xmlPun;  // punctuation
-            else Log.w(TAG, "Unhandled:"+type);
+            switch (type) {
+                case "tag":
+                    colorIdx = R.color.xmlTag;       // tag
+                    break;
+                case "atn":
+                    colorIdx = R.color.xmlAtn;  // attribute name
+                    break;
+                case "atv":
+                    colorIdx = R.color.xmlAtv;  // attribute value
+                    break;
+                case "com":
+                    colorIdx = R.color.xmlCom;  // comment
+                    break;
+                case "pln":
+                    colorIdx = R.color.xmlPln;  // plain text
+                    break;
+                case "pun":
+                    colorIdx = R.color.xmlPun;  // punctuation
+                    break;
+                default:
+                    Log.w(TAG, "Unhandled:" + type);
+                    break;
+            }
 
             // convert color id into color
             String color = (colorIdx<0)?"red":String.format("#%06X", (0xFFFFFF & mContext.getResources().getColor(colorIdx)));
@@ -665,6 +702,7 @@ public class ControlActivity extends AppCompatActivity {
         IntentFilter filter = new IntentFilter();
         filter.addAction(Hm10Service.ACTION_DISCONNECTED);
         filter.addAction(Hm10Service.ACTION_NOTIFY_MESSAGE);
+        filter.addAction(Hm10Service.ACTION_NOTIFY_DESTROYED);
         LocalBroadcastManager.getInstance(this).registerReceiver(mHm10ServiceReceiver, filter);
     }
 
@@ -682,7 +720,7 @@ public class ControlActivity extends AppCompatActivity {
     }
 
     // map sensor values onto slider/joystick ranges
-    private int sensor_value(int type, Integer lmax, float vals[]) {
+    private int sensor_value(int type, Integer lmax, float[] vals) {
         float angle = vals[0];  // sensor 1
         if (type == 2) angle = vals[1];
         if (type == 3) angle = vals[2];
@@ -771,7 +809,7 @@ public class ControlActivity extends AppCompatActivity {
                 mSensorMag = null;
                 mSensorAccel = null;
             }
-        };
+        }
     };
 
     @Override

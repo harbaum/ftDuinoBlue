@@ -135,6 +135,7 @@ public class Hm10Service extends Service {
     @Override
     public IBinder onBind(Intent intent) { return null; }
 
+
     private final BroadcastReceiver mActivityReceiver = new BroadcastReceiver() {
         @Override
         public void onReceive(Context context, Intent intent) {
@@ -400,6 +401,7 @@ public class Hm10Service extends Service {
             if (!result.getScanRecord().getServiceUuids().get(0).equals(new ParcelUuid(UUID_UART_SERVICE)))
                 return;
 
+            // Log.d(TAG, "Scan result:" + result.getDevice());
             addDevice(result.getDevice());
         }
     };
@@ -674,6 +676,8 @@ public class Hm10Service extends Service {
 
         private
         void processLine(String line) {
+            // Log.w(TAG, "processLine: " + line);
+
             // everything up to first whitespace is the command name
             String[] parts = line.split(" +", 2);  // split line at first ':'
             String cmd = parts[0];
@@ -763,7 +767,7 @@ public class Hm10Service extends Service {
 
                         processLine(line);
                     } else
-                        Log.w(TAG, "Checksum failure");
+                        Log.w(TAG, "Checksum failure in line " + new String(lineBytes, StandardCharsets.UTF_8));
                 } catch (NumberFormatException e) {
                     // if anything goes wrong we'll just ignore this (broken) message
                 }
@@ -870,6 +874,10 @@ public class Hm10Service extends Service {
     public void onDestroy() {
         Log.d(TAG, "onDestroy");
         super.onDestroy();
+
+        // disconnect from any device
+        disconnect();
+
         sendStatus(ACTION_NOTIFY_DESTROYED);
         LocalBroadcastManager.getInstance(this).unregisterReceiver(mActivityReceiver);
     }
