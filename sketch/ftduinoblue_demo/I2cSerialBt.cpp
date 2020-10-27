@@ -1,9 +1,23 @@
 #include "I2cSerialBt.h"
 #include <Wire.h>
-
+#include <Arduino.h>
 #define ADDR 5  // make configurable
 
 I2cSerialBt::I2cSerialBt() { }
+
+bool I2cSerialBt::check(int timeout_msec) {
+  Wire.begin();
+  
+  uint32_t timeout = millis();
+  do {
+    Wire.beginTransmission(ADDR);
+    if(!Wire.endTransmission())
+      return true;
+  }
+  while(millis() - timeout < timeout_msec);
+
+  return false;
+}
 
 uint8_t I2cSerialBt::registerRead(char r) {
   Wire.beginTransmission(ADDR);
@@ -23,12 +37,17 @@ void I2cSerialBt::registerWrite(char r, uint8_t d) {
 void I2cSerialBt::begin(uint32_t baud) {
   Wire.begin();
 
+  // wait for i2c adapter to show up on bus
+  do
+    Wire.beginTransmission(ADDR);
+  while(Wire.endTransmission());  
+
   // set baud rate
   registerWrite(0, baud/1200);
 }
 
-void I2cSerialBt::led(bool on) {
-  registerWrite(1, on?1:0);
+void I2cSerialBt::key(bool on) {
+  registerWrite(1, on?0:1);
 }
   
 void I2cSerialBt::end() { }

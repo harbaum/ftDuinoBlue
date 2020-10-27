@@ -9,7 +9,8 @@ public:
   void begin(uint32_t baud);
   void end();
 
-  void led(bool on);
+  bool check(int timeout);
+  void key(bool on);
   int available();
   int availableForWrite();
   int read();

@@ -8,16 +8,32 @@
  *  For more info see http://ftduino.de/blue  
  */
 
+/*
+ * This sketch works on two quite different setups: 
+ * 
+ * a) A Arduino Uni with the HM-10 bluetooth le module plugged right into
+ *    D8 to D13 of the Arduino. An optional led plus 1k resistor between
+ *    D3 and GND is helpful.
+ *    
+ *    This setup is automatically selected during compile time if the 
+ *    board is set to Arduino Uno
+ *    
+ * b) A ftDuino (Arduino designed for use with fischertechnik) with the
+ *    ftDuino bluetooth LE module. An optional lamp or led connected
+ *    between output O1 and GND is helpful.
+ *    
+ *    This setup is automatically selected during compile time if the
+ *    board is set to ftDuino.
+ */
+
+#include <Wire.h>
 #include <avr/pgmspace.h>
 #include "ftduinoblue.h"
 
 #if defined(__AVR_ATmega328P__)  // Arduino UNO, NANO
-// auto select UNO setup if the atmega328p is found
 #define USE_UNO_SU   // soft uart on arduino uno (HM10 on: RX D10, TX D09, GND D11, VCC D12)
 #else
-// This sketch supports different hardware setups. Choose you one below:
 #define USE_I2C_BT   // ftDuino with ftduino i2c bluetooth adapter 
-// #define USE_SERIAL1  // ftDuino as explained at https://harbaum.github.io/ftduino/www/manual/experimente.html#6.19.2
 #endif
 
 #ifdef USE_I2C_BT
@@ -30,12 +46,7 @@ I2cSerialBt btSerial;
 #ifdef USE_UNO_SU
 #include <SoftwareSerial.h>
 SoftwareSerial btSerial(10, 9);
-#else
-#ifdef USE_SERIAL1
-#define btSerial Serial1   // default = Serial1 of e.g. Leonardo or Pro Micro
-#else
-#error "Please specify your setup!"
-#endif
+#define LED_PIN 3
 #endif
 #endif
 
@@ -60,6 +71,11 @@ void setup() {
   // power up bt module on uno
   pinMode(11, OUTPUT);  digitalWrite(11, LOW);
   pinMode(12, OUTPUT);  digitalWrite(12, HIGH);
+
+#ifdef LED_PIN
+  // optional extra LED
+  pinMode(LED_PIN, OUTPUT);  digitalWrite(LED_PIN, HIGH);
+#endif
 #endif
 
 #ifdef FTDUINO
@@ -68,13 +84,26 @@ void setup() {
 
   // register callback for ftduinoblue
   ftdblue.setCallback(ftduinoblue_callback);
-  
+
+#ifdef USE_I2C_BT
+  // wait max 1 sec for adapter to appear on bus. This is not
+  // needed as begin() will wait for the device. But this way
+  // we can use the led as an inidictaor for problems with 
+  // the i2c uart adapater
+  if(!btSerial.check(1000)) {
+    // fast blink with led on failure
+    pinMode(LED_BUILTIN, OUTPUT); 
+    while(true) {
+      digitalWrite(LED_BUILTIN, HIGH);
+      delay(100);
+      digitalWrite(LED_BUILTIN, LOW);
+      delay(100);
+    }
+  }
+#endif
+
+  // initialize i2c uart to 9600 baud
   btSerial.begin(9600);
-  
-// optionally set the bluetooth name.
-//    delay(10);
-//    btSerial.println("AT+NAMEftDuinoBlue");
-//    delay(10);
 
   // prepare led
   pinMode(LED_BUILTIN, OUTPUT);
@@ -89,23 +118,6 @@ static char ledChanged = true;
 static char ledState = true;         // LED is on
 static uint8_t ledBlinkSpeed = 50;   // ~ 2 Hz
 static uint8_t ledBrightness = 128;  // 50% brightness
-
-
-// the i2c_bluetooth adapter has a on-board led which can
-// be used to show that the communication is fine.
-void adapter_led() {
-#ifdef USE_I2C_BT
-  // flash led on adapter
-  static uint32_t led_tick = 0;
-  static bool led_state = false;
-  if((!led_state && (millis() - led_tick) > 100) ||
-     ( led_state && (millis() - led_tick) > 900)) {
-    btSerial.led(led_state);
-    led_tick = millis();
-    led_state = !led_state;
-  }  
-#endif
-}
 
 void ftduinoblue_callback(struct FtduinoBlue::reply *r) {    
   switch(r->type) {
@@ -173,7 +185,6 @@ void ftduinoblue_callback(struct FtduinoBlue::reply *r) {
 }
 
 void loop() {
-  adapter_led();
 
   // led blink timer
   static uint32_t led_tick = 0;
@@ -197,6 +208,10 @@ void loop() {
 #ifdef FTDUINO
     if(led_state && ledState) ftduino.output_set(Ftduino::O1, Ftduino::HI, ledBrightness/4);
     else                      ftduino.output_set(Ftduino::O1, Ftduino::OFF, 0);
+#endif
+#ifdef LED_PIN
+    if(led_state && ledState) analogWrite(LED_PIN, ledBrightness);
+    else                      digitalWrite(LED_PIN, LOW);
 #endif
   }
 
