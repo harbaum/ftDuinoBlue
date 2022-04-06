@@ -46,7 +46,7 @@ class HM10:
             self.rx(self._ble.gatts_read(value_handle))
 
     def rx(self, data):
-        pass
+        print("RX:", data)
 
     def tx(self, data):
         while data:
@@ -55,3 +55,10 @@ class HM10:
             self._ble.gatts_notify(self._conn_handle, self._handle_uart, chunk)
             data = data[len(chunk):]
             time.sleep(0.01)          # sending too fast results in out of memory
+
+
+if __name__ == "__main__":
+    hm = HM10("ESPUART")
+
+    while True:
+        time.sleep_ms(100)
